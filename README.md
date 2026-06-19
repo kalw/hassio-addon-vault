@@ -1,136 +1,49 @@
-# Home Assistant Add-on Hashicorp Vault
+# Vault Home Assistant add-on repository
 
-[![GitHub Release](https://img.shields.io/github/v/release/tidalf/ha-addon-vault)](https://github.com/tidalf/ha-addon-vault/releases)
-[![Build status](https://img.shields.io/github/workflow/status/tidalf/ha-addon-vault/Build%20plugin/main)](https://github.com/tidalf/ha-addon-vault/actions)
-![Top language](https://img.shields.io/github/languages/top/tidalf/ha-addon-vault)
-![License](https://img.shields.io/github/license/tidalf/ha-addon-vault)
+This repository will be used to store the Vault Home Assistant addon.
 
-### Summary
+It host the development process, add-ons documentation: <https://developers.home-assistant.io/docs/add-ons>
 
-- Launch an Hashicorp vault server in raft mode. 
-- The default ssl key from /ssl is used if it exists.
-- TLS can be disabled by setting "disable_tls" to true :
-```bash
-disable_tls: true
-```
+To use this addon, go to the addon repositories:
 
-### Install
+Stable channel
+[![Open your Home Assistant instance and show the add add-on repository dialog with a specific repository URL pre-filled.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Fkalw%2Fhassio-addons)
+Edge channel
+[![Open your Home Assistant instance and show the add add-on repository dialog with a specific repository URL pre-filled.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Fkalw%2Fhassio-addons-edge)
 
-Use the following repository (add it in the add-on store of the supervisor) : 
-https://github.com/tidalf/ha-addons
+## Add-ons
 
+This repository contains the following add-ons
 
-### Custom the configuration
-- You can use the vault_local_config variable (see https://hub.docker.com/_/vault)
-- The raft data is stored in /data/vault/raft, it'll be removed if you remove the addon. 
-- You can change that by using the raft_path setting (it'll probably break the other scripts)
-```bash
-raft_path: /config/vault/raft
-```
+### [Vault](./vault)
 
+![Supports aarch64 Architecture][aarch64-shield]
+![Supports amd64 Architecture][amd64-shield]
+![Supports armhf Architecture][armhf-shield]
+![Supports armv7 Architecture][armv7-shield]
+![Supports i386 Architecture][i386-shield]
 
-### Unsafe auto unseal
-- You can enable unsafe auto unseal (it'll store the unseal keys and root token in clear in /data/vault/vault.ini)
-```bash
-unsafe_auto_init: true
-```
+<!--
 
-### Auto provisioning
-- You can enable initial config of the vault: It'll run a terraform config (it can be in changed in /config/vault/terraform)
-```bash
-auto_provision: true
-```
-- If you don't use unsafe auto unseal (it stores a token), you can specify a provisioning token (make it short lived)
-````
-provision_token_password: a_token
-````
+Notes to developers after forking or using the github template feature:
+- While developing comment out the 'image' key from 'example/config.yaml' to make the supervisor build the addon
+  - Remember to put this back when pushing up your changes.
+- When you merge to the 'main' branch of your repository a new build will be triggered.
+  - Make sure you adjust the 'version' key in 'example/config.yaml' when you do that.
+  - Make sure you update 'example/CHANGELOG.md' when you do that.
+  - The first time this runs you might need to adjust the image configuration on github container registry to make it public
+  - You may also need to adjust the github Actions configuration (Settings > Actions > General > Workflow > Read & Write)
+- Adjust the 'image' key in 'example/config.yaml' so it points to your username instead of 'home-assistant'.
+  - This is where the build images will be published to.
+- Rename the example directory.
+  - The 'slug' key in 'example/config.yaml' should match the directory name.
+- Adjust all keys/url's that points to 'home-assistant' to now point to your user/fork.
+- Share your repository on the forums https://community.home-assistant.io/c/projects/9
+- Do awesome stuff!
+ -->
 
-- You can create a default user with an admin policy attached like that: 
-```bash
-create_admin_user: true
-vault_admin_user: admin
-vault_admin_password: some_password
-```
-
-### Use keybase to encrypt initial keys
-- You can enable auto initialization with gpg/keybase keys:
-```bash
-pgp_keys: 'keybase:exampleuser'
-```
-- the encrypted variables are shown in the log (fixme?)
-- if you use keybase and no kms autounseal you'll need to unseal manually
-```bash
-export VAULT_ADDR="http(s)://yourinstance:8200"
-vault operator unseal [-migrate] $(echo $unsealkey | base64 -d | keybase pgp decrypt)
-```
-
-### Use AWS KMS for autounseal
-It's possible to use the AWS KMS service to auto unseal the vault. 
-You'll need to create the kms key and the iam user credentials with correct policy (kms:Encrypt,kms:Decrypt and kms:DescribeKey).
-
-Then you can set the following values:
-```bash
-aws_unseal: true
-aws_region: eu-west-1
-aws_access_key: *****
-aws_secret_key: ******
-aws_kms_key_id: ******
-```
-
-If you disable aws kms, you need to set the downgrade variable (at least for the transition) (fixme)
-```bash
-aws_unseal: false
-aws_unseal_downgrade: true
-```
-
-### Enable the cluster
-Cluster listener addr is set to localhost by default. 
-
-Set it to a valid address through 'vault_cluster_addr' then enable the port forward for tcp/8201 (provide a value for the port)
-(it's untested, no automated setup for multi nodes for now)
-
-### Downgrading from keybase to unsafe local storage
-It's a bit tricky and those commands need to be exec outside of the addon container: 
-
-- Retrieve the needed values from the logs (keys_b64, encoded_root_token and adm.asc)
-- Config your local vault client to reach your vault server addon (export VAULT_ADDR=..)
-- Unseal the vault using your keybase
-- Create a provisioning token
-- Set it in the config, restart
-- Start the rekeing using a backup
-- The script will retrieve the backup using the provisioning token above.
-
-```bash
-#!/usr/bin/env bash
-# $1 is the encrypted unseal key (keys_b64 from the logs)
-# $2 is the encrypted root key (encoded_root_token from the logs)
-# $3 is the gpg key of the local unsafe storage (adm.asc from the logs)
-
-decrypt () {
-  echo $1 | base64 -d | keybase pgp decrypt
-}
-
-vault operator unseal $(decrypt $1)
-
-vault login $(decrypt $2)
-vault token create -ttl=2h
-
-echo "copy this token in the setting \"provision_token_password:\""
-echo "and set unsafe_downgrade: true"
-echo "then restart the addon, press enter when done"
-
-read a
-
-echo "$3" | base64 -d >> pb2
-vault operator unseal $(decrypt $1)
-
-echo "Sleep for elections"
-sleep 15 
-
-nonce=$(vault operator rekey -format json -pgp-keys=pb2 -key-shares=1 -key-threshold=1 -init -backup | jq -r .nonce)
-vault operator rekey -nonce $nonce $(decrypt $1)
-```
-
-
-
-
+[aarch64-shield]: https://img.shields.io/badge/aarch64-yes-green.svg
+[amd64-shield]: https://img.shields.io/badge/amd64-yes-green.svg
+[armhf-shield]: https://img.shields.io/badge/armhf-yes-green.svg
+[armv7-shield]: https://img.shields.io/badge/armv7-yes-green.svg
+[i386-shield]: https://img.shields.io/badge/i386-yes-green.svg

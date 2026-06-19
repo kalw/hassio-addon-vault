@@ -1,0 +1,23 @@
+---
+name: CI
+
+# yamllint disable-line rule:truthy
+on:
+  push:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+  packages: read
+  security-events: write
+
+jobs:
+  workflows:
+    # yamllint disable-line rule:line-length
+    uses: hassio-addons/workflows/.github/workflows/addon-ci.yaml@383c10d83acbe341acbb35a4a61bfd14827f00f0

@@ -1,0 +1,25 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "packageRules": [
+    {
+      "matchPackageNames": ["hashicorp/vault"],
+      "automerge": true,
+      "automergeType": "pr",
+      "automergeStrategy": "squash"
+    }
+  ],
+  "regexManagers": [
+    {
+      "fileMatch": ["^vault/Dockerfile$"],
+      "matchStrings": ["ARG VAULT_VERSION=(?<currentValue>[^\\n]+)"],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "hashicorp/vault"
+    },
+    {
+      "fileMatch": ["^vault/build\\.yaml$"],
+      "matchStrings": ["VAULT_VERSION: \"(?<currentValue>[^\"]+)\""],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "hashicorp/vault"
+    }
+  ]
+}
