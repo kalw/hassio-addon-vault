@@ -6,4 +6,7 @@ updates:
     schedule:
       interval: daily
       time: "06:00"
+    cooldown:
+      default: 5
+      semver-major: 14
     open-pull-requests-limit: 10
