@@ -30,9 +30,8 @@ RUN set -eux; \
     VAULT_GPGKEY=91A6E7F85D05C65630BEF18951852D87348FFC4C; \
     found=''; \
     for server in \
-    hkp://p80.pool.sks-keyservers.net:80 \
-    hkp://keyserver.ubuntu.com:80 \
-    hkp://pgp.mit.edu:80 \
+    hkps://keyserver.ubuntu.com \
+    hkps://keys.openpgp.org \
     ; do \
     echo "Fetching GPG key $VAULT_GPGKEY from $server"; \
     gpg --batch --keyserver "$server" --recv-keys "$VAULT_GPGKEY" && found=yes && break; \
