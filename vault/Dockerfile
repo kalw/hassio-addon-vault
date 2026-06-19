@@ -1,7 +1,11 @@
 ARG VAULT_VERSION=1.6.2
 ARG TERRAFORM_VERSION=0.14.3
 ARG BUILD_FROM
+# hadolint ignore=DL3006
 FROM ${BUILD_FROM}
+
+# Set shell
+SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
 
 ###
 # Create a vault user and group first so the IDs get set the same way,
@@ -12,16 +16,15 @@ RUN addgroup vault && \
 ###
 # Set up certificates, our base tools, and Vault.
 # from https://github.com/hashicorp/docker-vault/blob/master/0.X/Dockerfile
+ARG VAULT_VERSION
+ARG TERRAFORM_VERSION
+# hadolint ignore=DL3003,DL3018,DL3047
 RUN set -eux; \
-    export VAULT_VERSION=1.6.2; \
-    export TERRAFORM_VERSION=0.14.3; \
     apk add --no-cache ca-certificates gnupg openssl libcap su-exec dumb-init tzdata nginx && \
     apkArch="$(apk --print-arch)"; \
     case "$apkArch" in \
-    armhf) ARCH='arm' ;; \
     aarch64) ARCH='arm64' ;; \
     x86_64) ARCH='amd64' ;; \
-    x86) ARCH='386' ;; \
     *) echo >&2 "error: unsupported architecture: $apkArch"; exit 1 ;; \
     esac && \
     VAULT_GPGKEY=91A6E7F85D05C65630BEF18951852D87348FFC4C; \
@@ -37,32 +40,27 @@ RUN set -eux; \
     test -z "$found" && echo >&2 "error: failed to fetch GPG key $VAULT_GPGKEY" && exit 1; \
     mkdir -p /tmp/build && \
     cd /tmp/build && \
-    wget https://releases.hashicorp.com/vault/${VAULT_VERSION}/vault_${VAULT_VERSION}_linux_${ARCH}.zip && \
-    wget https://releases.hashicorp.com/vault/${VAULT_VERSION}/vault_${VAULT_VERSION}_SHA256SUMS && \
-    wget https://releases.hashicorp.com/vault/${VAULT_VERSION}/vault_${VAULT_VERSION}_SHA256SUMS.sig && \
-    gpg --batch --verify vault_${VAULT_VERSION}_SHA256SUMS.sig vault_${VAULT_VERSION}_SHA256SUMS && \
-    grep vault_${VAULT_VERSION}_linux_${ARCH}.zip vault_${VAULT_VERSION}_SHA256SUMS | sha256sum -c && \
-    unzip -d /bin vault_${VAULT_VERSION}_linux_${ARCH}.zip && \
-    wget https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_${ARCH}.zip && \
-    wget https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_SHA256SUMS && \
-    wget https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_SHA256SUMS.sig && \
-    gpg --batch --verify terraform_${TERRAFORM_VERSION}_SHA256SUMS.sig terraform_${TERRAFORM_VERSION}_SHA256SUMS && \
-    grep terraform_${TERRAFORM_VERSION}_linux_${ARCH}.zip terraform_${TERRAFORM_VERSION}_SHA256SUMS | sha256sum -c && \
-    unzip -d /bin terraform_${TERRAFORM_VERSION}_linux_${ARCH}.zip && \
+    wget -q "https://releases.hashicorp.com/vault/${VAULT_VERSION}/vault_${VAULT_VERSION}_linux_${ARCH}.zip" && \
+    wget -q "https://releases.hashicorp.com/vault/${VAULT_VERSION}/vault_${VAULT_VERSION}_SHA256SUMS" && \
+    wget -q "https://releases.hashicorp.com/vault/${VAULT_VERSION}/vault_${VAULT_VERSION}_SHA256SUMS.sig" && \
+    gpg --batch --verify "vault_${VAULT_VERSION}_SHA256SUMS.sig" "vault_${VAULT_VERSION}_SHA256SUMS" && \
+    grep "vault_${VAULT_VERSION}_linux_${ARCH}.zip" "vault_${VAULT_VERSION}_SHA256SUMS" | sha256sum -c && \
+    unzip -d /bin "vault_${VAULT_VERSION}_linux_${ARCH}.zip" && \
+    wget -q "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_${ARCH}.zip" && \
+    wget -q "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_SHA256SUMS" && \
+    wget -q "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_SHA256SUMS.sig" && \
+    gpg --batch --verify "terraform_${TERRAFORM_VERSION}_SHA256SUMS.sig" "terraform_${TERRAFORM_VERSION}_SHA256SUMS" && \
+    grep "terraform_${TERRAFORM_VERSION}_linux_${ARCH}.zip" "terraform_${TERRAFORM_VERSION}_SHA256SUMS" | sha256sum -c && \
+    unzip -d /bin "terraform_${TERRAFORM_VERSION}_linux_${ARCH}.zip" && \
     cd /tmp && \
     rm -rf /tmp/build && \
     gpgconf --kill dirmngr && \
-    gpgconf --kill gpg-agent
-
-RUN mkdir -p /vault/logs && \
-    mkdir -p /vault/file && \
-    mkdir -p /vault/config && \
-    mkdir -p /vault/raft && \
+    gpgconf --kill gpg-agent && \
+    mkdir -p /vault/logs /vault/file /vault/config /vault/raft /vault/terraform && \
     chown -R vault:vault /vault
 
-RUN mkdir -p /vault/terraform
-
 COPY /terraform/* /vault/terraform/
+
 ###
 # 8200/tcp is the primary interface that applications use to interact with
 # Vault. 8021 for the cluster
@@ -70,7 +68,7 @@ EXPOSE 8200 8201
 
 ###
 # vault config template
-COPY vault.hcl.template  /vault/config/
+COPY vault.hcl.template /vault/config/
 
 # Copy root filesystem
 COPY rootfs /
@@ -99,4 +97,4 @@ LABEL \
     org.opencontainers.image.documentation="https://github.com/${BUILD_REPOSITORY}/blob/main/README.md" \
     org.opencontainers.image.created=${BUILD_DATE} \
     org.opencontainers.image.revision=${BUILD_REF} \
-    org.opencontainers.image.version=${BUILD_VERSION} 
+    org.opencontainers.image.version=${BUILD_VERSION}
