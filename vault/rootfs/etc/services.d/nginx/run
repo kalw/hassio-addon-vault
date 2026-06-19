@@ -1,0 +1,61 @@
+#!/usr/bin/with-contenv bashio
+# ==============================================================================
+# Vault ingress proxy
+# Generates an nginx server block that proxies :8099 → vault :8200 with
+# sub_filter URL rewriting so the Vault UI works behind HA ingress.
+# ==============================================================================
+
+DISABLE_TLS="$(bashio::config 'disable_tls')"
+
+if [ "$DISABLE_TLS" = "true" ]; then
+    VAULT_SCHEME="http"
+else
+    VAULT_SCHEME="https"
+fi
+
+bashio::log.info "Generating nginx ingress config (vault backend: ${VAULT_SCHEME}://127.0.0.1:8200)"
+
+# Generate the server block.  Nginx \$variables are escaped so bash doesn't
+# expand them; only $VAULT_SCHEME is a shell variable intentionally interpolated.
+cat > /tmp/vault-ingress.conf << EOF
+server {
+    listen 8099 default_server;
+
+    location / {
+        proxy_pass ${VAULT_SCHEME}://127.0.0.1:8200;
+        proxy_ssl_verify off;
+
+        proxy_set_header Host               \$http_host;
+        proxy_set_header X-Real-IP          \$remote_addr;
+        proxy_set_header X-Forwarded-For    \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto  \$scheme;
+
+        # Disable content-encoding so sub_filter can read plain text.
+        proxy_set_header Accept-Encoding    "";
+
+        proxy_http_version 1.1;
+        proxy_read_timeout 900s;
+        proxy_buffering off;
+
+        # Rewrite Location: redirect headers that vault issues (e.g. /ui/vault/...).
+        proxy_redirect ~^https?://[^/]+(/.*)$ \$http_x_ingress_path\$1;
+
+        # --- HTML rewriting ---
+        # Only run sub_filter on HTML; JS API calls are handled by the shim below.
+        sub_filter_once off;
+        sub_filter_types text/html;
+
+        # Rewrite absolute asset paths so the browser fetches them through ingress.
+        sub_filter 'href="/ui/'  'href="\$http_x_ingress_path/ui/';
+        sub_filter 'src="/ui/'   'src="\$http_x_ingress_path/ui/';
+
+        # Inject a JS shim before </head> that patches window.fetch and
+        # XMLHttpRequest so all absolute-path API calls (/v1/...) are prefixed
+        # with the ingress base path that HA supervisor sends in X-Ingress-Path.
+        sub_filter '</head>' '<script>(function(){var p="\$http_x_ingress_path";if(!p)return;function rw(u){return(typeof u==="string"&&u.charAt(0)==="/"&&u.indexOf(p)!==0)?p+u:u}var of=window.fetch;window.fetch=function(u,o){return of.call(this,rw(u),o)};var ox=XMLHttpRequest.prototype.open;XMLHttpRequest.prototype.open=function(m,u){return ox.apply(this,[m,rw(u)].concat(Array.prototype.slice.call(arguments,2)))}})()</script></head>';
+    }
+}
+EOF
+
+bashio::log.info "Starting nginx..."
+exec nginx -c /etc/nginx/nginx.conf -g "daemon off;"
