@@ -15,46 +15,29 @@ RUN addgroup vault && \
 
 ###
 # Set up certificates, our base tools, and Vault.
-# from https://github.com/hashicorp/docker-vault/blob/master/0.X/Dockerfile
 ARG VAULT_VERSION
 ARG TERRAFORM_VERSION
 # hadolint ignore=DL3003,DL3018,DL3047
 RUN set -eux; \
-    apk add --no-cache ca-certificates gnupg openssl libcap su-exec dumb-init tzdata nginx && \
+    apk add --no-cache ca-certificates openssl libcap su-exec dumb-init tzdata nginx unzip && \
     apkArch="$(apk --print-arch)"; \
     case "$apkArch" in \
     aarch64) ARCH='arm64' ;; \
     x86_64) ARCH='amd64' ;; \
     *) echo >&2 "error: unsupported architecture: $apkArch"; exit 1 ;; \
     esac && \
-    VAULT_GPGKEY=91A6E7F85D05C65630BEF18951852D87348FFC4C; \
-    found=''; \
-    for server in \
-    hkps://keyserver.ubuntu.com \
-    hkps://keys.openpgp.org \
-    ; do \
-    echo "Fetching GPG key $VAULT_GPGKEY from $server"; \
-    gpg --batch --keyserver "$server" --recv-keys "$VAULT_GPGKEY" && found=yes && break; \
-    done; \
-    test -z "$found" && echo >&2 "error: failed to fetch GPG key $VAULT_GPGKEY" && exit 1; \
     mkdir -p /tmp/build && \
     cd /tmp/build && \
     wget -q "https://releases.hashicorp.com/vault/${VAULT_VERSION}/vault_${VAULT_VERSION}_linux_${ARCH}.zip" && \
     wget -q "https://releases.hashicorp.com/vault/${VAULT_VERSION}/vault_${VAULT_VERSION}_SHA256SUMS" && \
-    wget -q "https://releases.hashicorp.com/vault/${VAULT_VERSION}/vault_${VAULT_VERSION}_SHA256SUMS.sig" && \
-    gpg --batch --verify "vault_${VAULT_VERSION}_SHA256SUMS.sig" "vault_${VAULT_VERSION}_SHA256SUMS" && \
     grep "vault_${VAULT_VERSION}_linux_${ARCH}.zip" "vault_${VAULT_VERSION}_SHA256SUMS" | sha256sum -c && \
     unzip -d /bin "vault_${VAULT_VERSION}_linux_${ARCH}.zip" && \
     wget -q "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_${ARCH}.zip" && \
     wget -q "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_SHA256SUMS" && \
-    wget -q "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_SHA256SUMS.sig" && \
-    gpg --batch --verify "terraform_${TERRAFORM_VERSION}_SHA256SUMS.sig" "terraform_${TERRAFORM_VERSION}_SHA256SUMS" && \
     grep "terraform_${TERRAFORM_VERSION}_linux_${ARCH}.zip" "terraform_${TERRAFORM_VERSION}_SHA256SUMS" | sha256sum -c && \
     unzip -d /bin "terraform_${TERRAFORM_VERSION}_linux_${ARCH}.zip" && \
     cd /tmp && \
     rm -rf /tmp/build && \
-    gpgconf --kill dirmngr && \
-    gpgconf --kill gpg-agent && \
     mkdir -p /vault/logs /vault/file /vault/config /vault/raft /vault/terraform && \
     chown -R vault:vault /vault
 
