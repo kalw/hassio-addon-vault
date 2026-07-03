@@ -50,4 +50,4 @@ schema:
 arch:
   - amd64
   - aarch64
-image: ghcr.io/kalw/vault/{arch}
+image: ghcr.io/kalw/hassio-addon-vault/{arch}
