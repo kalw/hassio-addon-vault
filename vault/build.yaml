@@ -9,4 +9,4 @@ labels:
   org.opencontainers.image.licenses: "MIT"
 args:
   TERRAFORM_VERSION: "0.14.3"
-  VAULT_VERSION: "1.6.2"
+  VAULT_VERSION: "1.21.4"
