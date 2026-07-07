@@ -15,11 +15,11 @@ VAULT_CONFIG_DIR=/config/vault/config
 # create vault data dirs (/data/vault/raft by default)
 mkdir -p $VAULT_CONFIG_DIR /config/vault/logs /data/vault/raft /config/vault/raft /config/vault/file 2>/dev/null
 
-# if a cert is available and tls is not disabled we copy the cert (to make it readble by wault) and we use it
+# if a cert is available and tls is not disabled we copy the cert (to make it readable by vault) and we use it
 if [ -f "$VAULT_TLS_PRIVKEY" ] && [ "$DISABLE_TLS" = false ]; then
     mkdir -p /ssl/vault 2>/dev/null
-    cp "$VAULT_TLS_PRIVKEY" "$VAULT_TLS_CERTIFICATE" /ssl/vault
-    # chown for vault uses
+    cp "$VAULT_TLS_CERTIFICATE" /ssl/vault/fullchain.pem
+    cp "$VAULT_TLS_PRIVKEY" /ssl/vault/privkey.pem
     chown -R vault /ssl/vault
     scheme="https://"
 fi
