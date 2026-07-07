@@ -3,6 +3,9 @@ name: Packages Cleanup
 
 # yamllint disable-line rule:truthy
 on:
+  # zizmor: ignore[dangerous-triggers]
+  # Safe: restricted to branches: [main] so fork PRs cannot trigger this.
+  # Only permission granted is packages: write (no secrets, no code access).
   workflow_run:
     workflows: ["Deploy"]
     branches: [main]
