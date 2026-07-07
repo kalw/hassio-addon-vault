@@ -1,0 +1,32 @@
+---
+name: Packages Cleanup
+
+# yamllint disable-line rule:truthy
+on:
+  workflow_run:
+    workflows: ["Deploy"]
+    branches: [main]
+    types:
+      - completed
+
+permissions:
+  packages: write
+
+jobs:
+  cleanup:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch:
+          - amd64
+          - aarch64
+    steps:
+      - name: Delete untagged package versions
+        # yamllint disable-line rule:line-length
+        uses: actions/delete-package-versions@e5bc658cc4c965c472efe991f8beea3981499c55 # v5.0.0
+        with:
+          package-name: hassio-addon-vault/${{ matrix.arch }}
+          package-type: container
+          delete-only-untagged-versions: true
+          token: ${{ secrets.GITHUB_TOKEN }}
