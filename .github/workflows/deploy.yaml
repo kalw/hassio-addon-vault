@@ -14,7 +14,8 @@ on:
 
 jobs:
   workflows:
-    uses: hassio-addons/workflows/.github/workflows/addon-deploy.yaml@main
+    # yamllint disable-line rule:line-length
+    uses: hassio-addons/workflows/.github/workflows/addon-deploy.yaml@8b2275cd2d23852a2c496b058449b2664fc70faf
     with:
       slug: "hassio-addon-vault"
       repository: "hassio-addons"

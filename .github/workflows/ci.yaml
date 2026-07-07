@@ -13,4 +13,5 @@ on:
 
 jobs:
   workflows:
-    uses: hassio-addons/workflows/.github/workflows/addon-ci.yaml@main
+    # yamllint disable-line rule:line-length
+    uses: hassio-addons/workflows/.github/workflows/addon-ci.yaml@8b2275cd2d23852a2c496b058449b2664fc70faf
