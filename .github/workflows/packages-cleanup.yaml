@@ -26,13 +26,25 @@ jobs:
           - hassio-addon-vault/aarch64
     steps:
       - name: Delete untagged package versions
-        # yamllint disable-line rule:line-length
-        uses: actions/delete-package-versions@e5bc658cc4c965c472efe991f8beea3981499c55 # v5.0.0
-        with:
-          package-name: ${{ matrix.package }}
-          package-type: container
-          delete-only-untagged-versions: true
-          token: ${{ secrets.GITHUB_TOKEN }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OWNER: ${{ github.repository_owner }}
+          PACKAGE: ${{ matrix.package }}
+        run: |
+          encoded=$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1],safe=''))" "$PACKAGE")
+          ids=$(gh api --paginate "/users/$OWNER/packages/container/$encoded/versions" \
+            --jq '[.[] | select(.metadata.container.tags | length == 0) | .id] | .[]' \
+            || true)
+          if [ -z "$ids" ]; then
+            echo "No untagged versions found for $PACKAGE"
+            exit 0
+          fi
+          echo "Untagged versions in $PACKAGE: $(echo "$ids" | wc -w)"
+          for id in $ids; do
+            gh api --method DELETE "/users/$OWNER/packages/container/$encoded/versions/$id" \
+              && echo "Deleted $id" \
+              || echo "Could not delete $id (may be protected)"
+          done
 
   dispatch-edge:
     name: 📢 Re-dispatch edge repository updater
