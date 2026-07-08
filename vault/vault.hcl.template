@@ -20,4 +20,5 @@ seal "awskms" {
   disabled = {{if eq .aws_unseal true}} false {{else}} true {{end}}
 }
 {{end}}
+disable_mlock = true
 ui = true

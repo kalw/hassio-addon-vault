@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 # Unreleased
 
+### Fixed
+
+- Add `disable_mlock = true` to vault.hcl — required by Vault 1.20+
+
 ### Changed
 
 - Upgrade Vault from 1.6.2 to 1.21.4
