@@ -20,15 +20,16 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        arch:
-          - amd64
-          - aarch64
+        package:
+          - hassio-addon-vault
+          - hassio-addon-vault/amd64
+          - hassio-addon-vault/aarch64
     steps:
       - name: Delete untagged package versions
         # yamllint disable-line rule:line-length
         uses: actions/delete-package-versions@e5bc658cc4c965c472efe991f8beea3981499c55 # v5.0.0
         with:
-          package-name: hassio-addon-vault/${{ matrix.arch }}
+          package-name: ${{ matrix.package }}
           package-type: container
           delete-only-untagged-versions: true
           token: ${{ secrets.GITHUB_TOKEN }}
