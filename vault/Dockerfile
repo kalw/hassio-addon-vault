@@ -19,7 +19,7 @@ ARG VAULT_VERSION
 ARG TERRAFORM_VERSION
 # hadolint ignore=DL3003,DL3018,DL3047
 RUN set -eux; \
-    apk add --no-cache ca-certificates openssl libcap su-exec dumb-init tzdata nginx unzip && \
+    apk add --no-cache ca-certificates openssl libcap su-exec dumb-init tzdata nginx unzip gnupg && \
     apkArch="$(apk --print-arch)"; \
     case "$apkArch" in \
     aarch64) ARCH='arm64' ;; \
