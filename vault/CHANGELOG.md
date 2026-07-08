@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 # Unreleased
 
+### Changed
+
+- Upgrade Vault from 1.6.2 to 1.21.4
+- Upgrade Terraform from 0.14.3 to 1.15.8
+
 ### Added
 
 - nginx

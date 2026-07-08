@@ -1,5 +1,5 @@
-ARG VAULT_VERSION=1.6.2
-ARG TERRAFORM_VERSION=0.14.3
+ARG VAULT_VERSION=1.21.4
+ARG TERRAFORM_VERSION=1.15.8
 ARG BUILD_FROM
 # hadolint ignore=DL3006
 FROM ${BUILD_FROM}
@@ -31,11 +31,11 @@ RUN set -eux; \
     wget -q "https://releases.hashicorp.com/vault/${VAULT_VERSION}/vault_${VAULT_VERSION}_linux_${ARCH}.zip" && \
     wget -q "https://releases.hashicorp.com/vault/${VAULT_VERSION}/vault_${VAULT_VERSION}_SHA256SUMS" && \
     grep "vault_${VAULT_VERSION}_linux_${ARCH}.zip" "vault_${VAULT_VERSION}_SHA256SUMS" | sha256sum -c && \
-    unzip -d /bin "vault_${VAULT_VERSION}_linux_${ARCH}.zip" && \
+    unzip -p "vault_${VAULT_VERSION}_linux_${ARCH}.zip" vault > /bin/vault && chmod +x /bin/vault && \
     wget -q "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_${ARCH}.zip" && \
     wget -q "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_SHA256SUMS" && \
     grep "terraform_${TERRAFORM_VERSION}_linux_${ARCH}.zip" "terraform_${TERRAFORM_VERSION}_SHA256SUMS" | sha256sum -c && \
-    unzip -d /bin "terraform_${TERRAFORM_VERSION}_linux_${ARCH}.zip" && \
+    unzip -p "terraform_${TERRAFORM_VERSION}_linux_${ARCH}.zip" terraform > /bin/terraform && chmod +x /bin/terraform && \
     cd /tmp && \
     rm -rf /tmp/build && \
     mkdir -p /vault/logs /vault/file /vault/config /vault/raft /vault/terraform && \
