@@ -30,21 +30,24 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OWNER: ${{ github.repository_owner }}
           PACKAGE: ${{ matrix.package }}
+        # yamllint disable rule:line-length
         run: |
           encoded=$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1],safe=''))" "$PACKAGE")
+          jq_filter='[.[] | select(.metadata.container.tags | length == 0) | .id] | .[]'
           ids=$(gh api --paginate "/users/$OWNER/packages/container/$encoded/versions" \
-            --jq '[.[] | select(.metadata.container.tags | length == 0) | .id] | .[]' \
-            || true)
+            --jq "$jq_filter" || true)
           if [ -z "$ids" ]; then
             echo "No untagged versions found for $PACKAGE"
             exit 0
           fi
           echo "Untagged versions in $PACKAGE: $(echo "$ids" | wc -w)"
           for id in $ids; do
-            gh api --method DELETE "/users/$OWNER/packages/container/$encoded/versions/$id" \
+            api_path="/users/$OWNER/packages/container/$encoded/versions/$id"
+            gh api --method DELETE "$api_path" \
               && echo "Deleted $id" \
               || echo "Could not delete $id (may be protected)"
           done
+        # yamllint enable rule:line-length
 
   dispatch-edge:
     name: 📢 Re-dispatch edge repository updater
