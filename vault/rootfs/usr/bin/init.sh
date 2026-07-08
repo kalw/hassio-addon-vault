@@ -47,14 +47,15 @@ generate_gpg_key() {
         bashio::log.info "no key found generating a key"
         cat >initkey <<EOF
 %echo Generating a basic OpenPGP key
-Key-Type: default
-Subkey-Type: default
+Key-Type: RSA
+Key-Length: 4096
+Subkey-Type: RSA
+Subkey-Length: 4096
 Name-Real: Adm
 Name-Comment: No passphrase
 Name-Email: operator@vault.local
 Expire-Date: 0
 Passphrase: passphrase
-# Do a commit here, so that we can later print "done" :-)
 %commit
 %echo done
 EOF
