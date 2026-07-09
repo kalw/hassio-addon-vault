@@ -8,7 +8,7 @@ All notable changes to this project will be documented in this file.
 
 - Add `disable_mlock = true` to vault.hcl — required by Vault 1.20+
 - Replace execlineb finish scripts with sh equivalents — s6-test is not available in the base image
-- Add `ingress_port: 8099` and `ingress_entry: /ui/vault/` — supervisor needs explicit port, entry path skips redirect chain
+- Add `ingress_entry: /ui/vault/` — HA navigates directly to the Vault UI path, skipping vault's root-to-UI redirect which breaks under ingress proxying
 
 ### Changed
 
