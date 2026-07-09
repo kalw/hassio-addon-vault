@@ -54,12 +54,10 @@ server {
         sub_filter 'src="/ui/'   'src="\$http_x_ingress_path/ui/';
 
         # Inject a JS shim before </head> that:
-        # 1. Patches the vault/config/environment meta tag so Ember's rootURL
-        #    matches the ingress path (Ember reads rootURL from this meta tag
-        #    with locationType=history; without this it 404s every route).
-        # 2. Rewrites fetch/XHR so all absolute-path API calls (/v1/...) are
-        #    prefixed with the ingress base path from X-Ingress-Path.
-        sub_filter '</head>' '<script>(function(){var p="\$http_x_ingress_path";if(!p)return;var mt=document.querySelector("meta[name=\\"vault/config/environment\\"]");if(mt){try{var cfg=JSON.parse(decodeURIComponent(mt.content));if(cfg.rootURL)cfg.rootURL=p+cfg.rootURL;mt.content=encodeURIComponent(JSON.stringify(cfg))}catch(e){}}function rw(u){return(typeof u==="string"&&u.charAt(0)==="/"&&u.indexOf(p)!==0)?p+u:u}var of=window.fetch;window.fetch=function(u,o){return of.call(this,rw(u),o)};var ox=XMLHttpRequest.prototype.open;XMLHttpRequest.prototype.open=function(method,u){return ox.apply(this,[method,rw(u)].concat(Array.prototype.slice.call(arguments,2)))}})()</script></head>';
+        # 1. Patches vault/config/environment meta so Ember rootURL = ingress_path+/ui/
+        # 2. Rewrites fetch/XHR absolute paths (/v1/...) through the ingress prefix
+        # 3. Patches navigator.serviceWorker.register so sw.js loads via ingress
+        sub_filter '</head>' '<script>(function(){var p="\$http_x_ingress_path";if(!p)return;var mt=document.getElementsByName("vault/config/environment")[0];if(mt){try{var cfg=JSON.parse(decodeURIComponent(mt.content));if(cfg.rootURL)cfg.rootURL=p+cfg.rootURL;mt.content=encodeURIComponent(JSON.stringify(cfg))}catch(e){}}function rw(u){return(typeof u==="string"&&u.charAt(0)==="/"&&u.indexOf(p)!==0)?p+u:u}var of=window.fetch;window.fetch=function(u,o){return of.call(this,rw(u),o)};var ox=XMLHttpRequest.prototype.open;XMLHttpRequest.prototype.open=function(m,u){return ox.apply(this,[m,rw(u)].concat(Array.prototype.slice.call(arguments,2)))};var oSW=navigator.serviceWorker&&navigator.serviceWorker.register.bind(navigator.serviceWorker);if(oSW)navigator.serviceWorker.register=function(url,opts){return oSW(rw(url),opts?Object.assign({},opts,{scope:opts.scope?rw(opts.scope):undefined}):opts)}})();</script></head>';
     }
 }
 EOF
