@@ -49,6 +49,11 @@ server {
         sub_filter_once off;
         sub_filter_types text/html;
 
+        # Inject <base href> so Vault's Ember SPA uses the ingress path as rootURL.
+        # Vault's HTML has no <base> tag; without this Ember router sees
+        # rootURL=/ui/vault/ but the browser URL starts with the ingress token → 404.
+        sub_filter '<head>' '<head><base href="\$http_x_ingress_path/ui/">';
+
         # Rewrite absolute asset paths so the browser fetches them through ingress.
         sub_filter 'href="/ui/'  'href="\$http_x_ingress_path/ui/';
         sub_filter 'src="/ui/'   'src="\$http_x_ingress_path/ui/';
