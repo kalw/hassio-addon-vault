@@ -8,7 +8,7 @@ privileged:
   - IPC_LOCK
 init: false
 ingress: true
-ingress_entry: /ui/vault/
+ingress_entry: /ui/
 ports:
   8200/tcp: 8200
   8201/tcp: null
