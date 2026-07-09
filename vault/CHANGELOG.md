@@ -10,7 +10,7 @@ All notable changes to this project will be documented in this file.
 - Replace execlineb finish scripts with sh equivalents — s6-test is not available in the base image
 - Set `ingress_entry: ui/` (no leading slash) — supervisor concatenates token path + entry, leading slash produces double-slash `//ui/` which returns 404
 - Strip `Content-Security-Policy` and `X-Frame-Options` headers in nginx — Vault sets `frame-ancestors 'none'` which blocks HA ingress iframe
-- Patch `vault/config/environment` meta tag at runtime — Ember reads `rootURL` from this meta tag (`locationType: history`); prepend ingress path so Ember's router matches the ingress URL instead of showing 404
+- Inject JS shim that patches `vault/config/environment` meta tag rootURL, rewrites fetch/XHR API calls, and patches `navigator.serviceWorker.register` — all so the Vault Ember SPA routes and fetches correctly through the HA ingress path
 
 ### Changed
 
