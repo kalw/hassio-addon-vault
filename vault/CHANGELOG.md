@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file.
 - Add `disable_mlock = true` to vault.hcl — required by Vault 1.20+
 - Replace execlineb finish scripts with sh equivalents — s6-test is not available in the base image
 - Set `ingress_entry: ui/` (no leading slash) — supervisor concatenates token path + entry, leading slash produces double-slash `//ui/` which returns 404
+- Strip `Content-Security-Policy` and `X-Frame-Options` headers in nginx — Vault sets `frame-ancestors 'none'` which blocks HA ingress iframe
 
 ### Changed
 
