@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 
 - Add `disable_mlock = true` to vault.hcl — required by Vault 1.20+
+- Replace execlineb finish scripts with sh equivalents — s6-test is not available in the base image
 
 ### Changed
 
