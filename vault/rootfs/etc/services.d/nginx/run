@@ -49,19 +49,17 @@ server {
         sub_filter_once off;
         sub_filter_types text/html;
 
-        # Inject <base href> so Vault's Ember SPA uses the ingress path as rootURL.
-        # Vault's HTML has no <base> tag; without this Ember router sees
-        # rootURL=/ui/vault/ but the browser URL starts with the ingress token → 404.
-        sub_filter '<head>' '<head><base href="\$http_x_ingress_path/ui/">';
-
         # Rewrite absolute asset paths so the browser fetches them through ingress.
         sub_filter 'href="/ui/'  'href="\$http_x_ingress_path/ui/';
         sub_filter 'src="/ui/'   'src="\$http_x_ingress_path/ui/';
 
-        # Inject a JS shim before </head> that patches window.fetch and
-        # XMLHttpRequest so all absolute-path API calls (/v1/...) are prefixed
-        # with the ingress base path that HA supervisor sends in X-Ingress-Path.
-        sub_filter '</head>' '<script>(function(){var p="\$http_x_ingress_path";if(!p)return;function rw(u){return(typeof u==="string"&&u.charAt(0)==="/"&&u.indexOf(p)!==0)?p+u:u}var of=window.fetch;window.fetch=function(u,o){return of.call(this,rw(u),o)};var ox=XMLHttpRequest.prototype.open;XMLHttpRequest.prototype.open=function(m,u){return ox.apply(this,[m,rw(u)].concat(Array.prototype.slice.call(arguments,2)))}})()</script></head>';
+        # Inject a JS shim before </head> that:
+        # 1. Patches the vault/config/environment meta tag so Ember's rootURL
+        #    matches the ingress path (Ember reads rootURL from this meta tag
+        #    with locationType=history; without this it 404s every route).
+        # 2. Rewrites fetch/XHR so all absolute-path API calls (/v1/...) are
+        #    prefixed with the ingress base path from X-Ingress-Path.
+        sub_filter '</head>' '<script>(function(){var p="\$http_x_ingress_path";if(!p)return;var mt=document.querySelector("meta[name=\\"vault/config/environment\\"]");if(mt){try{var cfg=JSON.parse(decodeURIComponent(mt.content));if(cfg.rootURL)cfg.rootURL=p+cfg.rootURL;mt.content=encodeURIComponent(JSON.stringify(cfg))}catch(e){}}function rw(u){return(typeof u==="string"&&u.charAt(0)==="/"&&u.indexOf(p)!==0)?p+u:u}var of=window.fetch;window.fetch=function(u,o){return of.call(this,rw(u),o)};var ox=XMLHttpRequest.prototype.open;XMLHttpRequest.prototype.open=function(method,u){return ox.apply(this,[method,rw(u)].concat(Array.prototype.slice.call(arguments,2)))}})()</script></head>';
     }
 }
 EOF
