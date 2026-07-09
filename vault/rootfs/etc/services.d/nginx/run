@@ -37,6 +37,10 @@ server {
         proxy_read_timeout 900s;
         proxy_buffering off;
 
+        # Strip Vault's anti-framing headers so HA ingress iframe can load the UI.
+        proxy_hide_header Content-Security-Policy;
+        proxy_hide_header X-Frame-Options;
+
         # Rewrite Location: redirect headers that vault issues (e.g. /ui/vault/...).
         proxy_redirect ~^https?://[^/]+(/.*)$ \$http_x_ingress_path\$1;
 
